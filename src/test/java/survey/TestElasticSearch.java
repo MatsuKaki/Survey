@@ -7,7 +7,12 @@ import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
+import java.util.HashMap;
+import java.util.Map;
 
+import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
@@ -20,6 +25,12 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 
+/**
+ * No real unit test : only here to test various ways to reach eleastic search.
+ * Will be removed in due time... 
+ * @author Kaki
+ *
+ */
 public class TestElasticSearch {
 
 	@Test
@@ -82,13 +93,44 @@ public class TestElasticSearch {
 	public void testGetQueryWithESClientAPI() throws Exception {
 		TransportClient client = null;
 		try {
-			//Settings settings = Settings.builder().put("cluster.name", "surveys").build();
+			client = new PreBuiltTransportClient(Settings.EMPTY)
+					.addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName("localhost"), 9300));
+
+			SearchResponse response = client.prepareSearch("surveys").setTypes("user")
+					.setQuery(QueryBuilders.termQuery("user_id", "kdang060116")).get();
+			System.out.println("Output from Server .... \n");
+			System.out.println(response.getHits().hits()[0].sourceAsString());
+		} catch (Exception exc) {
+			exc.printStackTrace();
+		} finally {
+			// on shutdown
+			if (client != null) {
+				client.close();
+			}
+		}
+	}
+
+	@Test
+	public void testPostWithESClientAPI() {
+		TransportClient client = null;
+		try {
+			
+			Calendar cal = GregorianCalendar.getInstance();
+			cal.clear();;
+			cal.set(1980,7,23);
+			
 			client = new PreBuiltTransportClient(Settings.EMPTY)
 					.addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName("localhost"), 9300));
 			
-			SearchResponse response = client.prepareSearch("surveys").setTypes("user").setQuery(QueryBuilders.termQuery("user_id", "kdang060116")).get();
+			Map<String, Object> docSource = new HashMap<String, Object>();
+			docSource.put("user_id","kdang060116");
+			docSource.put("application_id","CCD");
+			docSource.put("question_id",1);
+			docSource.put("rating",5);
+			docSource.put("rating_date", cal);
+			IndexResponse response = client.prepareIndex("surveys","user_rating").setSource(docSource).get();
 			System.out.println("Output from Server .... \n");
-			System.out.println(response.getHits().hits()[0].sourceAsString());
+			System.out.println(response.getResult());
 		} catch(Exception exc){
 			exc.printStackTrace();
 		}
