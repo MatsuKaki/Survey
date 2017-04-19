@@ -12,6 +12,9 @@ import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
@@ -19,11 +22,10 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
+import org.glassfish.jersey.client.JerseyClient;
+import org.glassfish.jersey.client.JerseyClientBuilder;
+import org.glassfish.jersey.client.JerseyWebTarget;
 import org.junit.Test;
-
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
 
 /**
  * No real unit test : only here to test various ways to reach eleastic search.
@@ -65,18 +67,18 @@ public class TestElasticSearch {
 
 	@Test
 	public void testGetQueryWithJerseyClientAPI() {
-		Client client = Client.create();
+		JerseyClient client = JerseyClientBuilder.createClient();
 
 		try {
-			WebResource webResource = client.resource("http://localhost:9200/surveys/_search?").queryParam("q",
+			JerseyWebTarget webResource = client.target("http://localhost:9200/surveys/_search?").queryParam("q",
 					"user_id=\"kdang060116\"");
 
-			ClientResponse response = webResource.accept("application/json").get(ClientResponse.class);
+			Response response = webResource.request(MediaType.APPLICATION_JSON).get(Response.class);
 			if (response.getStatus() != 200) {
 				throw new RuntimeException("Failed : HTTP error code : " + response.getStatus());
 			}
 
-			String output = response.getEntity(String.class);
+			String output = response.readEntity(String.class);
 
 			System.out.println("Output from Server .... \n");
 			System.out.println(output);
