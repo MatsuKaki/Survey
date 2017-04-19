@@ -112,7 +112,7 @@ public class TestElasticSearch {
 		}
 	}
 
-	@Test
+	//@Test
 	public void testPostWithESClientAPI() {
 		TransportClient client = null;
 		try {
